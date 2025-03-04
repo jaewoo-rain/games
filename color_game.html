@@ -32,8 +32,15 @@
       }
       #timerDisplay {
         font-size: 1.2rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
         color: #333;
+      }
+      /* 지난 기록 영역 (정답 성공 시 잠시 보여짐) */
+      #lastTimeDisplay {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        color: #10b981;
+        font-weight: bold;
       }
       /* 색상 박스 스타일 */
       .boxes {
@@ -149,8 +156,9 @@
   <body>
     <div class="container">
       <h2>색깔 게임</h2>
-      <!-- 타이머 디스플레이 -->
+      <!-- 타이머 및 지난 기록 영역 -->
       <div id="timerDisplay">시간: 0초</div>
+      <div id="lastTimeDisplay"></div>
       <!-- 게임 시작 버튼 (초기에는 보이고, 게임 시작 후 숨김) -->
       <button id="startGameBtn" class="btn">게임 시작</button>
 
@@ -224,6 +232,7 @@
 
       // 요소 선택
       const timerDisplay = document.getElementById("timerDisplay");
+      const lastTimeDisplay = document.getElementById("lastTimeDisplay");
       const startGameBtn = document.getElementById("startGameBtn");
       const gameArea = document.getElementById("gameArea");
       const targetBox = document.getElementById("targetBox");
@@ -257,7 +266,7 @@
         blueRange.disabled = false;
         checkAnswerBtn.disabled = false;
         newColorBtn.disabled = false;
-        newColorBtn.style.display = "inline-block"; // 새 게임 시작 시 새 버튼 보이기
+        newColorBtn.style.display = "inline-block";
         restartBtn.style.display = "none";
 
         redRange.value = 0;
@@ -265,6 +274,8 @@
         blueRange.value = 0;
         guessBox.style.backgroundColor = "rgb(0, 0, 0)";
         resultMsg.innerText = "";
+        // 지난 기록 초기화 (다시 시작 시 기록이 보이지 않도록)
+        lastTimeDisplay.innerText = "";
 
         setNewTargetColor();
       }
@@ -316,14 +327,14 @@
           const elapsed = Math.floor((Date.now() - startTime) / 1000);
           resultMsg.style.color = "#10B981";
           resultMsg.innerText = "정답! " + elapsed + "초 걸렸어요!";
+          // 지난 기록에 성공한 시간 업데이트
+          lastTimeDisplay.innerText = "지난 기록: " + elapsed + "초";
 
           redRange.disabled = true;
           greenRange.disabled = true;
           blueRange.disabled = true;
           checkAnswerBtn.disabled = true;
-          // 정답 시 "새로운 색상" 버튼은 사라지게 함
-          newColorBtn.style.display = "none";
-
+          newColorBtn.style.display = "none"; // 성공 시 새로운 색상 버튼 숨김
           restartBtn.style.display = "inline-block";
         } else {
           resultMsg.style.color = "#EF4444";
@@ -331,7 +342,7 @@
         }
       }
 
-      // 다시 시작 함수: 게임 초기화 후 새 목표 색상 설정
+      // 다시 시작 함수: 게임 초기화 후 새 목표 색상 설정 (지난 기록은 초기화)
       function restartGame() {
         restartBtn.style.display = "none";
 
@@ -342,6 +353,8 @@
         newColorBtn.disabled = false;
         newColorBtn.style.display = "inline-block";
         resultMsg.innerText = "";
+        // 지난 기록 초기화 (다시 시작 시 기록이 보이지 않도록)
+        lastTimeDisplay.innerText = "";
 
         setNewTargetColor();
       }
