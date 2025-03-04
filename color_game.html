@@ -27,8 +27,13 @@
       }
       h2 {
         margin-top: 0;
-        margin-bottom: 1.5rem;
-        font-size: 1.25rem;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+      }
+      #timerDisplay {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        color: #333;
       }
       /* 색상 박스 스타일 */
       .boxes {
@@ -49,6 +54,7 @@
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
         transition: background-color 0.3s ease;
         margin-bottom: 0.5rem;
+        background-color: #ccc;
       }
       .label-text {
         font-size: 0.9rem;
@@ -143,45 +149,83 @@
   <body>
     <div class="container">
       <h2>색깔 게임</h2>
-      <!-- 색상 박스 영역 -->
-      <div class="boxes">
-        <div class="box-item">
-          <div id="targetBox" class="color-box"></div>
-          <div class="label-text">목표 색상</div>
+      <!-- 타이머 디스플레이 -->
+      <div id="timerDisplay">시간: 0초</div>
+      <!-- 게임 시작 버튼 (초기에는 보이고, 게임 시작 후 숨김) -->
+      <button id="startGameBtn" class="btn">게임 시작</button>
+
+      <!-- 게임 영역: 초기에는 숨김 -->
+      <div id="gameArea" style="display: none">
+        <!-- 색상 박스 영역 -->
+        <div class="boxes">
+          <div class="box-item">
+            <div id="targetBox" class="color-box"></div>
+            <div class="label-text">목표 색상</div>
+          </div>
+          <div class="box-item">
+            <div id="guessBox" class="color-box"></div>
+            <div class="label-text">현재 색상</div>
+          </div>
         </div>
-        <div class="box-item">
-          <div id="guessBox" class="color-box"></div>
-          <div class="label-text">현재 색상</div>
+        <!-- 결과 메시지 영역 -->
+        <p id="resultMessage"></p>
+        <!-- 슬라이더 컨트롤 -->
+        <div class="sliders">
+          <div class="slider-row">
+            <label for="redRange">R</label>
+            <input
+              type="range"
+              id="redRange"
+              min="0"
+              max="255"
+              value="0"
+              disabled
+            />
+          </div>
+          <div class="slider-row">
+            <label for="greenRange">G</label>
+            <input
+              type="range"
+              id="greenRange"
+              min="0"
+              max="255"
+              value="0"
+              disabled
+            />
+          </div>
+          <div class="slider-row">
+            <label for="blueRange">B</label>
+            <input
+              type="range"
+              id="blueRange"
+              min="0"
+              max="255"
+              value="0"
+              disabled
+            />
+          </div>
         </div>
+        <!-- 버튼 영역 -->
+        <button id="checkAnswerBtn" class="btn" disabled>정답 확인</button>
+        <button id="newColorBtn" class="btn" disabled>새로운 색상</button>
+        <!-- 성공 시 나타날 '다시 시작' 버튼 -->
+        <button id="restartBtn" class="btn" style="display: none">
+          다시 시작
+        </button>
       </div>
-      <!-- 결과 메시지 영역 -->
-      <p id="resultMessage"></p>
-      <!-- 슬라이더 컨트롤 -->
-      <div class="sliders">
-        <div class="slider-row">
-          <label for="redRange">R</label>
-          <input type="range" id="redRange" min="0" max="255" value="0" />
-        </div>
-        <div class="slider-row">
-          <label for="greenRange">G</label>
-          <input type="range" id="greenRange" min="0" max="255" value="0" />
-        </div>
-        <div class="slider-row">
-          <label for="blueRange">B</label>
-          <input type="range" id="blueRange" min="0" max="255" value="0" />
-        </div>
-      </div>
-      <!-- 버튼 영역 -->
-      <button id="checkAnswerBtn" class="btn">정답 확인</button>
-      <button id="newColorBtn" class="btn">새로운 색상</button>
     </div>
 
     <script>
-      // 각 채널별 허용 오차 설정
+      // 전역 변수 및 상수
       const tolerance = 15;
       let currentTargetColor = { r: 0, g: 0, b: 0 };
+      let startTime = null;
+      let timerInterval = null;
 
       // 요소 선택
+      const timerDisplay = document.getElementById("timerDisplay");
+      const startGameBtn = document.getElementById("startGameBtn");
+      const gameArea = document.getElementById("gameArea");
       const targetBox = document.getElementById("targetBox");
       const guessBox = document.getElementById("guessBox");
       const resultMsg = document.getElementById("resultMessage");
@@ -190,8 +234,42 @@
       const blueRange = document.getElementById("blueRange");
       const checkAnswerBtn = document.getElementById("checkAnswerBtn");
       const newColorBtn = document.getElementById("newColorBtn");
+      const restartBtn = document.getElementById("restartBtn");
 
-      // 슬라이더 색상 가져오기
+      // 타이머 업데이트 함수
+      function updateTimer() {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        timerDisplay.innerText = "시간: " + elapsed + "초";
+      }
+
+      // 게임 시작 함수: 게임 영역 보이기 및 초기화
+      function startGame() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerDisplay.innerText = "시간: 0초";
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimer, 1000);
+
+        gameArea.style.display = "block";
+        startGameBtn.style.display = "none";
+
+        redRange.disabled = false;
+        greenRange.disabled = false;
+        blueRange.disabled = false;
+        checkAnswerBtn.disabled = false;
+        newColorBtn.disabled = false;
+        newColorBtn.style.display = "inline-block"; // 새 게임 시작 시 새 버튼 보이기
+        restartBtn.style.display = "none";
+
+        redRange.value = 0;
+        greenRange.value = 0;
+        blueRange.value = 0;
+        guessBox.style.backgroundColor = "rgb(0, 0, 0)";
+        resultMsg.innerText = "";
+
+        setNewTargetColor();
+      }
+
+      // 슬라이더 값으로부터 색상 객체 생성
       function getSliderColor() {
         return {
           r: parseInt(redRange.value),
@@ -200,13 +278,13 @@
         };
       }
 
-      // 사용자 색상 박스 업데이트 (정답 확인은 버튼 클릭 시 수행)
+      // 사용자 색상 박스 업데이트 (슬라이더 입력 시)
       function updateGuessColor() {
         const { r, g, b } = getSliderColor();
         guessBox.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
       }
 
-      // 새로운 목표 색상 생성 및 초기화
+      // 목표 색상 생성 및 적용, 타이머 리셋
       function setNewTargetColor() {
         currentTargetColor = {
           r: Math.floor(Math.random() * 256),
@@ -215,15 +293,18 @@
         };
         targetBox.style.backgroundColor = `rgb(${currentTargetColor.r}, ${currentTargetColor.g}, ${currentTargetColor.b})`;
 
-        // 슬라이더 및 사용자 박스 초기화
         redRange.value = 0;
         greenRange.value = 0;
         blueRange.value = 0;
         guessBox.style.backgroundColor = "rgb(0, 0, 0)";
-        resultMsg.innerText = "";
+
+        startTime = Date.now();
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(updateTimer, 1000);
+        timerDisplay.innerText = "시간: 0초";
       }
 
-      // 정답 여부 확인 함수: 각 채널별 오차가 tolerance 이내이면 정답
+      // 정답 확인 함수: 각 채널별 오차가 tolerance 이내이면 정답 처리
       function checkMatch() {
         const guess = getSliderColor();
         const diffR = Math.abs(guess.r - currentTargetColor.r);
@@ -231,12 +312,38 @@
         const diffB = Math.abs(guess.b - currentTargetColor.b);
 
         if (diffR <= tolerance && diffG <= tolerance && diffB <= tolerance) {
-          resultMsg.style.color = "#10B981"; // 정답일 때 초록색
-          resultMsg.innerText = "정답!";
+          clearInterval(timerInterval);
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          resultMsg.style.color = "#10B981";
+          resultMsg.innerText = "정답! " + elapsed + "초 걸렸어요!";
+
+          redRange.disabled = true;
+          greenRange.disabled = true;
+          blueRange.disabled = true;
+          checkAnswerBtn.disabled = true;
+          // 정답 시 "새로운 색상" 버튼은 사라지게 함
+          newColorBtn.style.display = "none";
+
+          restartBtn.style.display = "inline-block";
         } else {
-          resultMsg.style.color = "#EF4444"; // 오답일 때 빨강색
+          resultMsg.style.color = "#EF4444";
           resultMsg.innerText = "틀렸습니다. 다시 시도해보세요!";
         }
+      }
+
+      // 다시 시작 함수: 게임 초기화 후 새 목표 색상 설정
+      function restartGame() {
+        restartBtn.style.display = "none";
+
+        redRange.disabled = false;
+        greenRange.disabled = false;
+        blueRange.disabled = false;
+        checkAnswerBtn.disabled = false;
+        newColorBtn.disabled = false;
+        newColorBtn.style.display = "inline-block";
+        resultMsg.innerText = "";
+
+        setNewTargetColor();
       }
 
       // 이벤트 리스너 연결
@@ -245,9 +352,8 @@
       blueRange.addEventListener("input", updateGuessColor);
       checkAnswerBtn.addEventListener("click", checkMatch);
       newColorBtn.addEventListener("click", setNewTargetColor);
-
-      // 초기 설정
-      setNewTargetColor();
+      restartBtn.addEventListener("click", restartGame);
+      startGameBtn.addEventListener("click", startGame);
     </script>
   </body>
 </html>
