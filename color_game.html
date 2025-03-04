@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RGB 색상 맞추기 게임</title>
+    <style>
+      /* 기본 레이아웃 및 스타일 */
+      body {
+        background: #f3f4f6;
+        font-family: sans-serif;
+        margin: 0;
+        padding: 2rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .container {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        max-width: 400px;
+        width: 100%;
+        text-align: center;
+      }
+      h2 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        font-size: 1.25rem;
+      }
+      /* 색상 박스 스타일 */
+      .boxes {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      .box-item {
+        flex: 1 1 45%;
+        text-align: center;
+      }
+      .color-box {
+        height: 100px;
+        border-radius: 8px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s ease;
+        margin-bottom: 0.5rem;
+      }
+      .label-text {
+        font-size: 0.9rem;
+        color: #374151;
+      }
+      /* 정답 메시지 스타일 */
+      #resultMessage {
+        font-weight: bold;
+        font-size: 1.1rem;
+        margin: 0.5rem 0;
+      }
+      /* 슬라이더 영역 스타일 */
+      .sliders {
+        text-align: left;
+        margin: 1rem 0;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        margin: 0.5rem 0;
+      }
+      .slider-row label {
+        width: 2rem;
+        font-weight: 600;
+        margin-right: 0.5rem;
+      }
+      label[for="redRange"] {
+        color: #ef4444;
+      }
+      label[for="greenRange"] {
+        color: #10b981;
+      }
+      label[for="blueRange"] {
+        color: #3b82f6;
+      }
+      .slider-row input[type="range"] {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 6px;
+        background: #e5e7eb;
+        border-radius: 3px;
+        outline: none;
+        cursor: pointer;
+      }
+      .slider-row input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #2563eb;
+        border: 2px solid #ffffff;
+        box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+        cursor: pointer;
+      }
+      .slider-row input[type="range"]::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #2563eb;
+        border: 2px solid #ffffff;
+        box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+        cursor: pointer;
+      }
+      /* 버튼 스타일 */
+      .btn {
+        background: #4f46e5;
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        transition: background 0.3s;
+        margin: 0.5rem;
+      }
+      .btn:hover {
+        background: #4338ca;
+      }
+      /* 반응형: 작은 화면에서 박스 쌓기 */
+      @media (max-width: 480px) {
+        .boxes {
+          flex-direction: column;
+        }
+        .box-item {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>RGB 색상 맞추기 게임</h2>
+      <!-- 색상 박스 영역 -->
+      <div class="boxes">
+        <div class="box-item">
+          <div id="targetBox" class="color-box"></div>
+          <div class="label-text">목표 색상</div>
+        </div>
+        <div class="box-item">
+          <div id="guessBox" class="color-box"></div>
+          <div class="label-text">현재 색상</div>
+        </div>
+      </div>
+      <!-- 정답 메시지 영역 (버튼 클릭 시 메시지 업데이트) -->
+      <p id="resultMessage"></p>
+      <!-- 슬라이더 컨트롤 -->
+      <div class="sliders">
+        <div class="slider-row">
+          <label for="redRange">R</label>
+          <input type="range" id="redRange" min="0" max="255" value="0" />
+        </div>
+        <div class="slider-row">
+          <label for="greenRange">G</label>
+          <input type="range" id="greenRange" min="0" max="255" value="0" />
+        </div>
+        <div class="slider-row">
+          <label for="blueRange">B</label>
+          <input type="range" id="blueRange" min="0" max="255" value="0" />
+        </div>
+      </div>
+      <!-- 버튼 영역 -->
+      <button id="checkAnswerBtn" class="btn">정답 확인</button>
+      <button id="newColorBtn" class="btn">새로운 색상</button>
+    </div>
+
+    <script>
+      // 각 채널별 허용 오차 설정
+      const tolerance = 10;
+      let currentTargetColor = { r: 0, g: 0, b: 0 };
+
+      // 요소 선택
+      const targetBox = document.getElementById("targetBox");
+      const guessBox = document.getElementById("guessBox");
+      const resultMsg = document.getElementById("resultMessage");
+      const redRange = document.getElementById("redRange");
+      const greenRange = document.getElementById("greenRange");
+      const blueRange = document.getElementById("blueRange");
+      const checkAnswerBtn = document.getElementById("checkAnswerBtn");
+      const newColorBtn = document.getElementById("newColorBtn");
+
+      // 슬라이더 색상 가져오기
+      function getSliderColor() {
+        return {
+          r: parseInt(redRange.value),
+          g: parseInt(greenRange.value),
+          b: parseInt(blueRange.value),
+        };
+      }
+
+      // 사용자 색상 박스 업데이트 (정답 확인은 버튼 클릭 시 수행)
+      function updateGuessColor() {
+        const { r, g, b } = getSliderColor();
+        guessBox.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+      }
+
+      // 새로운 목표 색상 생성 및 초기화
+      function setNewTargetColor() {
+        currentTargetColor = {
+          r: Math.floor(Math.random() * 256),
+          g: Math.floor(Math.random() * 256),
+          b: Math.floor(Math.random() * 256),
+        };
+        targetBox.style.backgroundColor = `rgb(${currentTargetColor.r}, ${currentTargetColor.g}, ${currentTargetColor.b})`;
+
+        // 슬라이더 및 사용자 박스 초기화
+        redRange.value = 0;
+        greenRange.value = 0;
+        blueRange.value = 0;
+        guessBox.style.backgroundColor = "rgb(0, 0, 0)";
+        resultMsg.innerText = "";
+      }
+
+      // 정답 여부 확인 함수: 각 채널별 오차가 tolerance 이내이면 정답
+      function checkMatch() {
+        const guess = getSliderColor();
+        const diffR = Math.abs(guess.r - currentTargetColor.r);
+        const diffG = Math.abs(guess.g - currentTargetColor.g);
+        const diffB = Math.abs(guess.b - currentTargetColor.b);
+
+        if (diffR <= tolerance && diffG <= tolerance && diffB <= tolerance) {
+          resultMsg.style.color = "#10B981"; // 정답일 때 초록색
+          resultMsg.innerText = "정답!";
+        } else {
+          resultMsg.style.color = "#EF4444"; // 오답일 때 빨강색
+          resultMsg.innerText = "틀렸습니다. 다시 시도해보세요!";
+        }
+      }
+
+      // 이벤트 리스너 연결
+      redRange.addEventListener("input", updateGuessColor);
+      greenRange.addEventListener("input", updateGuessColor);
+      blueRange.addEventListener("input", updateGuessColor);
+      checkAnswerBtn.addEventListener("click", checkMatch);
+      newColorBtn.addEventListener("click", setNewTargetColor);
+
+      // 초기 설정
+      setNewTargetColor();
+    </script>
+  </body>
+</html>
